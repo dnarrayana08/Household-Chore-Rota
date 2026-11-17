@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Household Chore Rota</title>
+<style>
+  :root {
+    --bg: #faf6f0;
+    --card: #ffffff;
+    --ink: #4a4034;
+    --ink-soft: #8a7d6d;
+    --line: #efe6da;
+    --accent: #e8a87c;
+    --accent-soft: #fbeedd;
+    --green: #7fb58a;
+    --green-soft: #e9f4eb;
+    --amber: #e0b15c;
+    --amber-soft: #faf1de;
+    --rose: #d98a8a;
+    --rose-soft: #f9eaea;
+    --radius: 18px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+    padding: 24px 16px 48px;
+  }
+
+  .wrap { max-width: 860px; margin: 0 auto; }
+
+  header.app { text-align: center; margin-bottom: 28px; }
+  header.app h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.02em; }
+  header.app p { color: var(--ink-soft); margin-top: 6px; font-size: 0.95rem; }
+
+  section.card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px 24px 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(120, 96, 70, 0.06);
+  }
+
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px; margin-bottom: 14px; flex-wrap: wrap;
+  }
+  .section-head h2 { font-size: 1.15rem; font-weight: 700; }
+  .section-head .hint { color: var(--ink-soft); font-size: 0.85rem; }
+
+  /* ---- Add forms ---- */
+  .add-form {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+  }
+  .add-form input[type="text"], .add-form select {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 0.9rem;
+    color: var(--ink);
+    background: #fff;
+    outline: none;
+  }
+  .add-form input[type="text"]:focus, .add-form select:focus {
+    border-color: var(--accent);
+  }
+  .add-form input.name { flex: 2 1 140px; min-width: 0; }
+  .add-form input.label-in { flex: 3 1 180px; min-width: 0; }
+  .add-form select.day { flex: 1 1 110px; min-width: 0; }
+  .add-form input.chore-in { flex: 4 1 220px; min-width: 0; }
+  .add-btn {
+    border: none; border-radius: 10px; padding: 9px 18px;
+    font-size: 0.9rem; font-weight: 600; cursor: pointer;
+    background: var(--accent); color: #fff;
+    transition: filter 0.15s;
+  }
+  .add-btn:hover { filter: brightness(1.05); }
+
+  /* ---- Progress ---- */
+  .progress-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+  }
+  .stat { border-radius: 14px; padding: 14px 16px; border: 1px solid var(--line); }
+  .stat .num { font-size: 1.8rem; font-weight: 700; }
+  .stat .lbl { font-size: 0.85rem; color: var(--ink-soft); }
+  .stat.done    { background: var(--green-soft); }
+  .stat.done .num { color: var(--green); }
+  .stat.pending { background: var(--amber-soft); }
+  .stat.pending .num { color: var(--amber); }
+  .stat.overdue { background: var(--rose-soft); }
+  .stat.overdue .num { color: var(--rose); }
+
+  .progress-bar {
+    margin-top: 16px; height: 12px;
+    background: var(--line); border-radius: 999px; overflow: hidden;
+  }
+  .progress-bar .fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--green));
+    border-radius: 999px; transition: width 0.35s ease;
+  }
+  .progress-caption {
+    margin-top: 8px; font-size: 0.85rem; color: var(--ink-soft); text-align: center;
+  }
+
+  /* ---- People ---- */
+  .people-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  .person {
+    border: 1px solid var(--line); border-radius: 14px; padding: 14px;
+    display: flex; align-items: center; gap: 12px; cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    background: #fff; position: relative;
+  }
+  .person:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(120,96,70,0.10); }
+  .person.selected { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .avatar {
+    width: 42px; height: 42px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 1rem; color: #fff; flex-shrink: 0;
+  }
+  .person .info .name { font-weight: 600; }
+  .person .info .label { font-size: 0.8rem; color: var(--ink-soft); }
+  .person .count {
+    margin-left: auto; font-size: 0.78rem;
+    background: var(--accent-soft); color: var(--ink-soft);
+    padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .person .remove {
+    position: absolute; top: 6px; right: 8px;
+    border: none; background: none; color: var(--ink-soft);
+    font-size: 0.9rem; cursor: pointer; line-height: 1; padding: 2px;
+  }
+  .person .remove:hover { color: var(--rose); }
+
+  /* ---- Roster ---- */
+  .roster { display: flex; flex-direction: column; gap: 10px; }
+
+  .chore {
+    border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px;
+    display: grid; grid-template-columns: 86px 1fr auto; gap: 12px;
+    align-items: center; background: #fff; position: relative;
+  }
+  .chore.done { background: var(--green-soft); border-color: #d5e8d9; }
+
+  .day-chip {
+    font-size: 0.78rem; font-weight: 700; text-align: center;
+    padding: 5px 0; border-radius: 999px;
+    background: var(--accent-soft); color: #a4703f; white-space: nowrap;
+  }
+  .day-chip.today { background: var(--accent); color: #fff; }
+
+  .chore .main .title { font-weight: 600; padding-right: 20px; }
+  .chore.done .main .title { text-decoration: line-through; color: var(--ink-soft); }
+  .chore .main .meta {
+    font-size: 0.82rem; color: var(--ink-soft); margin-top: 2px;
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  }
+  .tag {
+    display: inline-block; padding: 1px 8px; border-radius: 999px;
+    font-size: 0.72rem; font-weight: 600;
+  }
+  .tag.overdue { background: var(--rose-soft); color: var(--rose); }
+  .tag.pending { background: var(--amber-soft); color: #a8812f; }
+  .tag.complete { background: var(--green-soft); color: var(--green); }
+
+  .assign-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+  .assign-row .no-people { font-size: 0.78rem; color: var(--ink-soft); }
+  .assign-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid transparent; font-size: 0.72rem; font-weight: 700;
+    color: #fff; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0.45; transition: opacity 0.15s, transform 0.15s;
+  }
+  .assign-dot:hover { opacity: 0.85; transform: scale(1.1); }
+  .assign-dot.active { opacity: 1; border-color: var(--ink); }
+
+  .chore .remove {
+    position: absolute; top: 6px; right: 8px;
+    border: none; background: none; color: var(--ink-soft);
+    font-size: 0.9rem; cursor: pointer; line-height: 1; padding: 2px;
+  }
+  .chore .remove:hover { color: var(--rose); }
+
+  .done-btn {
+    border: none; border-radius: 999px; padding: 9px 16px;
+    font-size: 0.85rem; font-weight: 600; cursor: pointer;
+    background: var(--green); color: #fff; white-space: nowrap;
+    transition: filter 0.15s;
+  }
+  .done-btn:hover { filter: brightness(1.06); }
+  .done-btn.undo { background: var(--line); color: var(--ink-soft); }
+
+  .empty-note {
+    text-align: center; color: var(--ink-soft); font-size: 0.9rem; padding: 16px 0;
+  }
+
+  footer.app {
+    text-align: center; color: var(--ink-soft); font-size: 0.8rem; margin-top: 28px;
+  }
+
+  @media (max-width: 560px) {
+    .chore { grid-template-columns: 1fr; }
+    .chore .actions { justify-self: start; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="app">
+    <h1>🏡 Household Chore Rota</h1>
+    <p>Add your people and chores, then assign and tick them off — all on one screen.</p>
+  </header>
+
+  <!-- ========== PROGRESS ========== -->
+  <section class="card" id="progress-section">
+    <div class="section-head">
+      <h2>Progress this week</h2>
+      <span class="hint" id="week-caption"></span>
+    </div>
+    <div class="progress-grid">
+      <div class="stat done"><div class="num" id="stat-done">0</div><div class="lbl">Done</div></div>
+      <div class="stat pending"><div class="num" id="stat-pending">0</div><div class="lbl">Still to do</div></div>
+      <div class="stat overdue"><div class="num" id="stat-overdue">0</div><div class="lbl">Overdue</div></div>
+    </div>
+    <div class="progress-bar"><div class="fill" id="progress-fill"></div></div>
+    <div class="progress-caption" id="progress-caption"></div>
+  </section>
+
+  <!-- ========== PEOPLE ========== -->
+  <section class="card" id="people-section">
+    <div class="section-head">
+      <h2>People</h2>
+      <span class="hint">Add who lives in the house (2–4 works nicely)</span>
+    </div>
+    <form class="add-form" id="add-person-form">
+      <input type="text" class="name" id="person-name" placeholder="Name" maxlength="30" autocomplete="off" />
+      <input type="text" class="label-in" id="person-label" placeholder="Label (optional), e.g. Bin-day hero" maxlength="40" autocomplete="off" />
+      <button type="submit" class="add-btn">Add person</button>
+    </form>
+    <div class="people-grid" id="people-grid"></div>
+    <div class="empty-note" id="people-empty">No people yet — add someone above to get started. 👋</div>
+  </section>
+
+  <!-- ========== WEEKLY ROSTER ========== -->
+  <section class="card" id="roster-section">
+    <div class="section-head">
+      <h2>Weekly roster</h2>
+      <span class="hint">Add a chore, pick a day, then assign it with a coloured dot</span>
+    </div>
+    <form class="add-form" id="add-chore-form">
+      <input type="text" class="chore-in" id="chore-title" placeholder="Chore, e.g. Take out the bins" maxlength="60" autocomplete="off" />
+      <select class="day" id="chore-day"></select>
+      <button type="submit" class="add-btn">Add chore</button>
+    </form>
+    <div class="roster" id="roster"></div>
+    <div class="empty-note" id="roster-empty">No chores yet — add your first one above. 🧹</div>
+  </section>
+
+  <footer class="app">Everything stays on this screen — nothing is saved or sent anywhere.</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  var PALETTE = ["#e8917c", "#7cb0e8", "#9cc48a", "#c79ad4", "#e0b15c", "#8ad0c9", "#d98ab0", "#a3a8e8"];
+
+  var people = [];
+  var chores = [];
+  var nextPersonId = 1;
+  var nextChoreId = 1;
+
+  var selectedPersonId = null;
+  var todayDow = new Date().getDay();
+
+  // ---- day select options ----
+  var daySelect = document.getElementById("chore-day");
+  // Monday-first ordering in the dropdown
+  [1, 2, 3, 4, 5, 6, 0].forEach(function (d) {
+    var opt = document.createElement("option");
+    opt.value = String(d);
+    opt.textContent = DAY_NAMES[d];
+    if (d === todayDow) opt.selected = true;
+    daySelect.appendChild(opt);
+  });
+
+  function isOverdue(chore) {
+    if (chore.done) return false;
+    var choreIdx = (chore.day + 6) % 7;   // Monday-start week index
+    var todayIdx = (todayDow + 6) % 7;
+    return choreIdx < todayIdx;
+  }
+
+  function personById(id) {
+    for (var i = 0; i < people.length; i++) if (people[i].id === id) return people[i];
+    return null;
+  }
+
+  function personLoad(id) {
+    var n = 0;
+    chores.forEach(function (c) { if (c.assignee === id && !c.done) n++; });
+    return n;
+  }
+
+  // ---------- add forms ----------
+  document.getElementById("add-person-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var nameIn = document.getElementById("person-name");
+    var labelIn = document.getElementById("person-label");
+    var name = nameIn.value.trim();
+    if (!name) { nameIn.focus(); return; }
+    people.push({
+      id: nextPersonId++,
+      name: name,
+      label: labelIn.value.trim() || "Chore crew",
+      colour: PALETTE[(people.length) % PALETTE.length],
+      initials: name.slice(0, 1).toUpperCase()
+    });
+    nameIn.value = "";
+    labelIn.value = "";
+    nameIn.focus();
+    renderAll();
+  });
+
+  document.getElementById("add-chore-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var titleIn = document.getElementById("chore-title");
+    var title = titleIn.value.trim();
+    if (!title) { titleIn.focus(); return; }
+    chores.push({
+      id: nextChoreId++,
+      title: title,
+      day: parseInt(daySelect.value, 10),
+      assignee: null,
+      done: false
+    });
+    titleIn.value = "";
+    titleIn.focus();
+    renderAll();
+  });
+
+  // ---------- render: People ----------
+  function renderPeople() {
+    var grid = document.getElementById("people-grid");
+    var empty = document.getElementById("people-empty");
+    grid.innerHTML = "";
+    empty.style.display = people.length ? "none" : "block";
+
+    people.forEach(function (p) {
+      var el = document.createElement("div");
+      el.className = "person" + (selectedPersonId === p.id ? " selected" : "");
+
+      var rm = document.createElement("button");
+      rm.className = "remove";
+      rm.title = "Remove " + p.name;
+      rm.textContent = "✕";
+      rm.addEventListener("click", function (e) {
+        e.stopPropagation();
+        people = people.filter(function (x) { return x.id !== p.id; });
+        chores.forEach(function (c) { if (c.assignee === p.id) c.assignee = null; });
+        if (selectedPersonId === p.id) selectedPersonId = null;
+        renderAll();
+      });
+
+      var av = document.createElement("div");
+      av.className = "avatar";
+      av.style.background = p.colour;
+      av.textContent = p.initials;
+
+      var info = document.createElement("div");
+      info.className = "info";
+      var nm = document.createElement("div");
+      nm.className = "name";
+      nm.textContent = p.name;
+      var lb = document.createElement("div");
+      lb.className = "label";
+      lb.textContent = p.label;
+      info.appendChild(nm);
+      info.appendChild(lb);
+
+      var count = document.createElement("div");
+      count.className = "count";
+      count.textContent = personLoad(p.id) + " open";
+
+      el.appendChild(rm);
+      el.appendChild(av);
+      el.appendChild(info);
+      el.appendChild(count);
+
+      el.addEventListener("click", function () {
+        selectedPersonId = (selectedPersonId === p.id) ? null : p.id;
+        renderAll();
+      });
+
+      grid.appendChild(el);
+    });
+  }
+
+  // ---------- render: Roster ----------
+  function renderRoster() {
+    var list = document.getElementById("roster");
+    var empty = document.getElementById("roster-empty");
+    list.innerHTML = "";
+    empty.style.display = chores.length ? "none" : "block";
+
+    var ordered = chores.slice().sort(function (a, b) {
+      return ((a.day + 6) % 7) - ((b.day + 6) % 7);
+    });
+
+    ordered.forEach(function (chore) {
+      var row = document.createElement("div");
+      row.className = "chore" + (chore.done ? " done" : "");
+      if (selectedPersonId && chore.assignee === selectedPersonId) {
+        var selPerson = personById(chore.assignee);
+        if (selPerson) {
+          row.style.outline = "2px solid " + selPerson.colour;
+          row.style.outlineOffset = "1px";
+        }
+      }
+
+      var chip = document.createElement("div");
+      chip.className = "day-chip" + (chore.day === todayDow ? " today" : "");
+      chip.textContent = DAY_NAMES[chore.day].slice(0, 3);
+
+      var main = document.createElement("div");
+      main.className = "main";
+
+      var title = document.createElement("div");
+      title.className = "title";
+      title.textContent = chore.title;
+      main.appendChild(title);
+
+      var meta = document.createElement("div");
+      meta.className = "meta";
+
+      var person = chore.assignee !== null ? personById(chore.assignee) : null;
+      var who = document.createElement("span");
+      who.textContent = person ? person.name : "Unassigned";
+      if (person) {
+        var dot = document.createElement("span");
+        dot.style.cssText = "display:inline-block;width:8px;height:8px;border-radius:50%;background:" + person.colour + ";margin-right:4px;";
+        who.insertBefore(dot, who.firstChild);
+      }
+      meta.appendChild(who);
+
+      var tag = document.createElement("span");
+      if (chore.done) {
+        tag.className = "tag complete";
+        tag.textContent = "Done ✓";
+      } else if (chore.assignee === null) {
+        tag.className = "tag pending";
+        tag.textContent = "Needs someone";
+      } else if (isOverdue(chore)) {
+        tag.className = "tag overdue";
+        tag.textContent = "Overdue";
+      } else {
+        tag.className = "tag pending";
+        tag.textContent = chore.day === todayDow ? "Today" : "Pending";
+      }
+      meta.appendChild(tag);
+      main.appendChild(meta);
+
+      var assignRow = document.createElement("div");
+      assignRow.className = "assign-row";
+      if (people.length === 0) {
+        var np = document.createElement("span");
+        np.className = "no-people";
+        np.textContent = "Add a person above to assign this chore";
+        assignRow.appendChild(np);
+      } else {
+        people.forEach(function (p) {
+          var b = document.createElement("button");
+          b.className = "assign-dot" + (chore.assignee === p.id ? " active" : "");
+          b.style.background = p.colour;
+          b.title = "Assign to " + p.name;
+          b.textContent = p.initials;
+          b.addEventListener("click", function () {
+            chore.assignee = p.id;
+            renderAll();
+          });
+          assignRow.appendChild(b);
+        });
+      }
+      main.appendChild(assignRow);
+
+      var rm = document.createElement("button");
+      rm.className = "remove";
+      rm.title = "Remove chore";
+      rm.textContent = "✕";
+      rm.addEventListener("click", function () {
+        chores = chores.filter(function (c) { return c.id !== chore.id; });
+        renderAll();
+      });
+
+      var actions = document.createElement("div");
+      actions.className = "actions";
+      var btn = document.createElement("button");
+      btn.className = "done-btn" + (chore.done ? " undo" : "");
+      btn.textContent = chore.done ? "Undo" : "Mark done";
+      btn.addEventListener("click", function () {
+        chore.done = !chore.done;
+        renderAll();
+      });
+      actions.appendChild(btn);
+
+      row.appendChild(chip);
+      row.appendChild(main);
+      row.appendChild(actions);
+      row.appendChild(rm);
+      list.appendChild(row);
+    });
+  }
+
+  // ---------- render: Progress ----------
+  function renderProgress() {
+    var done = 0, overdue = 0, pending = 0;
+    chores.forEach(function (c) {
+      if (c.done) done++;
+      else if (isOverdue(c)) overdue++;
+      else pending++;
+    });
+
+    document.getElementById("stat-done").textContent = done;
+    document.getElementById("stat-pending").textContent = pending;
+    document.getElementById("stat-overdue").textContent = overdue;
+
+    var total = chores.length;
+    var pct = total ? Math.round((done / total) * 100) : 0;
+    document.getElementById("progress-fill").style.width = pct + "%";
+    document.getElementById("progress-caption").textContent =
+      total === 0
+        ? "Nothing on the board yet — add chores below."
+        : done + " of " + total + " chores done — " + pct + "% of the week complete.";
+
+    var monday = new Date();
+    var mIdx = (todayDow + 6) % 7;
+    monday.setDate(monday.getDate() - mIdx);
+    var sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    var fmt = function (d) { return d.toLocaleDateString(undefined, { day: "numeric", month: "short" }); };
+    document.getElementById("week-caption").textContent =
+      "Week of " + fmt(monday) + " – " + fmt(sunday);
+  }
+
+  function renderAll() {
+    renderProgress();
+    renderPeople();
+    renderRoster();
+  }
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
